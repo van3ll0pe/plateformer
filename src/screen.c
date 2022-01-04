@@ -34,7 +34,7 @@ Screen screen_init(int w, int h, char *title) {
  */
 int screen_init_sdl(Screen *screen) {
 
-    screen->m_window = SDL_CreateWindow(screen->m_titleWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen->m_widthWindow, screen->m_heightWindow, SDL_WINDOW_SHOWN |SDL_WINDOW_RESIZABLE);
+    screen->m_window = SDL_CreateWindow(screen->m_titleWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screen->m_widthWindow, screen->m_heightWindow, SDL_WINDOW_SHOWN |SDL_WINDOW_FULLSCREEN_DESKTOP);
     if (screen->m_window == NULL) {
         printf("probleme creation fenetre\n");
         return (EXIT_FAILURE);
@@ -95,6 +95,11 @@ void screen_getEvent(Screen *screen) {
     while (SDL_PollEvent(&screen->m_event)) {
         if (screen->m_event.type == SDL_QUIT) {
             screen->m_isRunning = 0;
+        }
+        if (screen->m_event.type == SDL_KEYDOWN) {
+            if (screen->m_event.key.keysym.sym == SDLK_ESCAPE) {
+                screen->m_isRunning = 0;
+            }
         }
     }
 }

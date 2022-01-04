@@ -28,6 +28,7 @@ struct Player {
 
     SDL_Rect                    m_sprite; //the Rectangle to get the good sprite on the spritesheet (the source rect)
     SDL_Rect                    m_position; //the Rectangle to display the sprite on the screen    (the dest rect)
+    SDL_Rect                    m_hitbox;   //the rectangle to set hitbox of player (the collision)
 
     int                         m_timerAnimation; //the timer to set the speed animation
     int                         m_timerMove;      //the timer to set the speed move of the player on the screen
