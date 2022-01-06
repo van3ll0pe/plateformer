@@ -26,8 +26,11 @@ Player player_init(Screen *screen) {
             //set the player rect on the screen
             .m_position.x = 400,
             .m_position.y = 100,
-            .m_position.w = 69 *3, 
-            .m_position.h = 44 *3,
+            .m_position.w = 69 *3, //à changer en fonction de la taille de l'écran
+            .m_position.h = 44 *3, //à changer en fonction de la largeur de l'écran
+
+            .m_isJumping  = 0,
+            .m_isSquating = 0,
 
             //set pointers of function
             .display = &player_display,
@@ -86,61 +89,29 @@ void player_move(Player *player) {
     player->m_timerAnimation = SDL_GetTicks(); //get the time
 
     //condition to move left/right
-    if (keyboard[SDL_SCANCODE_RIGHT]) { //move to the right
-        player->m_direction = 0; //le joueur regarde à droite (on ne flip pas l'image)
-
-        if ((player->m_sprite.y != 44) && (player->m_sprite.y != 88 && (player->m_sprite.x > 69))){
-            player->m_sprite.x = 0;
-            player->m_sprite.y = 44;
+    if (keyboard[SDL_SCANCODE_RIGHT] && !(keyboard[SDL_SCANCODE_LEFT])) { //move to the right
+        player->m_direction = 0;
+        if (player->m_isSquating == 0) {
+            player_animationRun(player, &lastTimeAnimation);
         }
-
-        if (player->m_timerAnimation >= lastTimeAnimation + 70) { //the animation is each 70 microseconds
-            lastTimeAnimation = player->m_timerAnimation;
-            
-            if (player->m_sprite.y == 44 && player->m_sprite.x < 345) {
-                player->m_sprite.x += 69;
-            } else if (player->m_sprite.y == 44 && player->m_sprite.x >= 345){
-                player->m_sprite.x = 0;
-                player->m_sprite.y = 88;
-            } else if (player->m_sprite.y == 88 && player->m_sprite.x < 69) {
-                player->m_sprite.x += 69;
-            } else {
-                    player->m_sprite.x = 0;
-                    player->m_sprite.y = 44;
-            }
+    } else if (keyboard[SDL_SCANCODE_LEFT] && !(keyboard[SDL_SCANCODE_RIGHT])) { //move to the left
+        player->m_direction = 1;
+        if (player->m_isSquating == 0) {
+            player_animationRun(player, &lastTimeAnimation);
         }
+    } else {
+        isNotMoving++;
+    }
+    
 
-    } else if (keyboard[SDL_SCANCODE_LEFT]) { //move to the left
-        player->m_direction = 1; //le joueur regarde à gauche (on flip la texture de n'importe quel sprite)
-
-        if ((player->m_sprite.y != 44) && (player->m_sprite.y != 88 && (player->m_sprite.x > 69))){
-            player->m_sprite.x = 0;
-            player->m_sprite.y = 44;
-        }
-
-        if (player->m_timerAnimation >= lastTimeAnimation + 70) { //the animation is each 70 microseconds
-            lastTimeAnimation = player->m_timerAnimation;
-            
-            if (player->m_sprite.y == 44 && player->m_sprite.x < 345) {
-                player->m_sprite.x += 69;
-            } else if (player->m_sprite.y == 44 && player->m_sprite.x >= 345){
-                player->m_sprite.x = 0;
-                player->m_sprite.y = 88;
-            } else if (player->m_sprite.y == 88 && player->m_sprite.x < 69) {
-                player->m_sprite.x += 69;
-            } else {
-                    player->m_sprite.x = 0;
-                    player->m_sprite.y = 44;
-            }
-        }
-        
-    } else if (keyboard[SDL_SCANCODE_DOWN]) { //the player squat
-
-
-        //squat 
+    if (keyboard[SDL_SCANCODE_DOWN]) { //the player squat
+        player_animationSquatDown(player, &lastTimeAnimation);
+    }else if (!(keyboard[SDL_SCANCODE_DOWN]) && (player->m_isSquating == 2)) {
+        player_animationSquatUp(player, &lastTimeAnimation);
     } else { //if no move left or right
         isNotMoving++;
     } //END condition to move left/right
+
 
     //condition to jump in more to move left/right
     if (keyboard[SDL_SCANCODE_UP]) { //jump the player
@@ -149,6 +120,8 @@ void player_move(Player *player) {
         isNotMoving++;
     } //END condition to jump in more to move left/right
 
+
+
     //confition to attack in more to jump/left/right
     if (keyboard[SDL_SCANCODE_D]) { //the player attack
 
@@ -156,16 +129,30 @@ void player_move(Player *player) {
         isNotMoving++;
     } //END confition to attack in more to jump/left/right
 
-    //if no keycap is pressed, the player is inactive
-    if (isNotMoving == 3) { //the player is in standby position
 
-        if (player->m_sprite.y != 0) { //put on the first sprite standby animation
+    //if no keycap is pressed, the player is inactive
+    if (isNotMoving == 4) { //the player is in standby position
+        player_animationStandBy(player, &lastTimeAnimation);
+    }
+
+
+}
+
+/**
+ * @brief Function to animate the player in standby position
+ * It takes a pointer on the address of lastTimeAnimation to set the value of the static variable
+ * 
+ * @param player 
+ * @param lastTimeAnimation 
+ */
+void player_animationStandBy(Player *player, int *lastTimeAnimation) {
+    if (player->m_sprite.y != 0) { //put on the first sprite standby animation
             player->m_sprite.y = 0;
             player->m_sprite.x = 0;
         }
         
-        if (player->m_timerAnimation >= lastTimeAnimation + 100) { //the animation is each 100 microseconds
-            lastTimeAnimation = player->m_timerAnimation;
+        if (player->m_timerAnimation > (*lastTimeAnimation) + 100) { //the animation is each 100 microseconds
+            (*lastTimeAnimation) = player->m_timerAnimation;
             
             if (player->m_sprite.x < 345) {
                 player->m_sprite.x += 69;
@@ -173,6 +160,82 @@ void player_move(Player *player) {
                 player->m_sprite.x = 0;
             }
         }
+}
+
+/**
+ * @brief function to animate the player in running
+ * It takes a pointer on the address of lastTimeAnimation to set the value of the static variable
+ * 
+ * @param player 
+ * @param lastTimeAnimation 
+ * @param direction 
+ */
+void player_animationRun(Player *player, int *lastTimeAnimation) {
+
+    if ((player->m_sprite.y != 44) && (player->m_sprite.y != 88 && (player->m_sprite.x > 69))){
+        player->m_sprite.x = 0;
+        player->m_sprite.y = 44;
     }
 
+    if (player->m_timerAnimation > (*lastTimeAnimation) + 70) { //the animation is each 70 microseconds
+        (*lastTimeAnimation) = player->m_timerAnimation;
+            
+        if (player->m_sprite.y == 44 && player->m_sprite.x < 345) {
+            player->m_sprite.x += 69;
+        } else if (player->m_sprite.y == 44 && player->m_sprite.x >= 345){
+            player->m_sprite.x = 0;
+            player->m_sprite.y = 88;
+        } else if (player->m_sprite.y == 88 && player->m_sprite.x < 69) {
+            player->m_sprite.x += 69;
+        } else {
+            player->m_sprite.x = 0;
+            player->m_sprite.y = 44;
+        }
+    }
+}
+
+void player_animationSquatDown(Player *player, int *lasTimeAnimation) {
+    if (player->m_isSquating == 0 ||player->m_isSquating == 1) { //if is not squating or begin the down
+        if (!(player->m_sprite.y == 440 && player->m_sprite.x >= 207) && player->m_isSquating == 0) { //Set the starting position 
+            player->m_sprite.y = 440;
+            player->m_sprite.x = 207;
+            player->m_isSquating = 1;
+
+        }
+
+        if (player->m_timerAnimation > (*lasTimeAnimation) + 60) {
+            (*lasTimeAnimation) = player->m_timerAnimation;
+
+            if (player->m_sprite.x < 345) {
+                player->m_sprite.x += 69;
+            } else {
+                player->m_isSquating = 2;
+            }
+        }
+
+    } else { //if is already squatting
+        player->m_sprite.x = 345;
+        player->m_sprite.y = 440;
+
+    }
+}
+
+void player_animationSquatUp(Player *player, int *lastTimeAnimation) {
+    if (player->m_isSquating == 2) {  //if the player is already down with the squat
+
+        if (!(player->m_sprite.y == 484 && player->m_sprite.x <= 138)) { //starting position for the animation
+            player->m_sprite.y = 484;
+            player->m_sprite.x = 0;
+        }
+
+        if (player->m_timerAnimation > (*lastTimeAnimation) + 60) {
+            (*lastTimeAnimation) = player->m_timerAnimation;
+
+            if (player->m_sprite.x < 138) {
+                player->m_sprite.x += 69;
+            } else {
+                player->m_isSquating = 0;
+            }
+        }
+    }
 }
